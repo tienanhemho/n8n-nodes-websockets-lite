@@ -21,7 +21,6 @@
   },
   "main": "index.js",
   "scripts": {
-    "preinstall": "npx only-allow pnpm",
     "build": "tsc && gulp build:icons",
     "dev": "tsc --watch",
     "format": "prettier nodes credentials --write",
@@ -43,13 +42,14 @@
     "eslint": "^8.56.0",
     "eslint-plugin-n8n-nodes-base": "^1.16.1",
     "gulp": "^4.0.2",
+    "n8n-workflow": "*",
     "prettier": "^3.3.2",
     "typescript": "^5.5.3"
   },
   "peerDependencies": {
-    "n8n-workflow": "1.48.0"
+    "n8n-workflow": "*"
   },
   "dependencies": {
-    "socket.io-client": "^4.8.1"
+    "ws": "^8.18.0"
   }
 }
