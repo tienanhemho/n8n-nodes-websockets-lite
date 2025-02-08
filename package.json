@@ -1,5 +1,5 @@
 {
-  "name": "n8n-nodes-websockets-trigger",
+  "name": "n8n-nodes-websockets-lite",
   "version": "0.1.0",
   "description": "websocket trigger event",
   "keywords": [
@@ -13,7 +13,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/<...>/n8n-nodes-<...>.git"
+    "url": "https://github.com/imblowsnow/n8n-nodes-websockets-lite"
   },
   "engines": {
     "node": ">=18.10",
@@ -26,7 +26,7 @@
     "format": "prettier nodes credentials --write",
     "lint": "eslint nodes credentials package.json",
     "lintfix": "eslint nodes credentials package.json --fix",
-    "prepublishOnly": "pnpm build && pnpm lint -c .eslintrc.prepublish.js nodes credentials package.json"
+    "prepublishOnly": "pnpm build"
   },
   "files": [
     "dist"
@@ -34,7 +34,8 @@
   "n8n": {
     "n8nNodesApiVersion": 1,
     "nodes": [
-      "dist/nodes/WebsocketsNode/WebsocketsTriggerNode.node.js"
+      "dist/nodes/WebsocketsNode/WebsocketsTriggerNode.node.js",
+      "dist/nodes/WebsocketsNode/WebsocketsReplyNode.node.js"
     ]
   },
   "devDependencies": {

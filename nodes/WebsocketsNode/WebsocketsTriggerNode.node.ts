@@ -113,6 +113,8 @@ export class WebsocketsTriggerNode implements INodeType {
 			throw new NodeOperationError(this.getNode(), '未配置websocketUrl');
 		}
 
+		let socket : any = null;
+
 		const headersParamter = this.getNodeParameter('headers', {}) as {
 			parameters: { name: string; value: string }[];
 		};
@@ -125,76 +127,94 @@ export class WebsocketsTriggerNode implements INodeType {
 			{},
 		);
 
-		const socket = new WebSocket(websocketUrl, {
-			headers: headers,
-		});
+		const run = async () => {
+			socket = new WebSocket(websocketUrl, {
+				headers: headers,
+			});
 
-		console.log('init trigger websocketUrl', websocketUrl, headers);
+			console.log('init trigger websocketUrl', websocketUrl, headers);
 
-		const transformData = async (data: any) => {
-			if (returnDataType === 'json') {
-				return JSON.parse(data);
+			const transformData = async (data: any) => {
+				if (returnDataType === 'json') {
+					return JSON.parse(data);
+				}
+				if (returnDataType === 'binary') {
+					return this.helpers.prepareBinaryData(data);
+				}
+				return data.toString('utf8');
+			};
+
+			const creatreResponsePromise = async () => {
+				const responsePromise = await this.helpers.createDeferredPromise<IExecuteResponsePromiseData>();
+
+				// @ts-ignore
+				responsePromise.promise.then((data) => {
+					console.log('responsePromise send', data);
+					socket.send(data.content);
+				});
+
+				return responsePromise;
 			}
-			if (returnDataType === 'binary') {
-				return this.helpers.prepareBinaryData(data);
-			}
-			return data.toString('utf8');
-		};
 
-		const responsePromise = await this.helpers.createDeferredPromise<IExecuteResponsePromiseData>();
 
-		// @ts-ignore
-		responsePromise.promise.then((data) => {
-			console.log('responsePromise send', data);
-			socket.send(data.content);
-		});
+			socket.on('message', async (data: any) => {
+				const resultData = { event: 'message', data: await transformData(data) };
+				this.emit([this.helpers.returnJsonArray([resultData])], await creatreResponsePromise());
+			});
 
-		socket.on('message', async (data: any) => {
-			const resultData = { event: 'message', data: await transformData(data) };
-			this.emit([this.helpers.returnJsonArray([resultData])]);
-		});
+			let pingTimer: boolean | any = false;
 
-		let pingTimer: boolean | any = false;
+			socket.on('open', async () => {
+				const resultData = {event: 'open'};
+				this.emit([this.helpers.returnJsonArray([resultData])], await creatreResponsePromise());
 
-		socket.on('open', () => {
-			const resultData = { event: 'open' };
-			this.emit([this.helpers.returnJsonArray([resultData])], responsePromise);
+				if (initData) {
+					socket.send(initData);
+				}
+				if (pingData) {
+					pingTimer = setInterval(() => {
+						socket.send(pingData);
+					}, 5000);
+				}
+			});
 
-			if (initData) {
-				socket.send(initData);
-			}
-			if (pingData) {
-				pingTimer = setInterval(() => {
-					socket.send(pingData);
-				}, 5000);
-			}
-		});
+			const pingData = this.getNodeParameter('pingData', '') as string;
 
-		const pingData = this.getNodeParameter('pingData', '') as string;
-
-		// Handle connection errors
-		socket.on('error', (error: any) => {
-			if (pingTimer) {
-				clearInterval(pingTimer);
-			}
-			console.error('WebSocket connection error', error);
-			// const errorData = {
-			// 	message: 'WebSocket connection error',
-			// 	description: error.message,
-			// };
-
-			this.emitError(new Error('Connection got error: ' + error.message));
-
-			// throw new NodeOperationError(this.getNode(), errorData);
-		});
-
-		return {
-			closeFunction: async () => {
+			// Handle connection errors
+			socket.on('error', (error: any) => {
 				if (pingTimer) {
 					clearInterval(pingTimer);
 				}
+				console.error('WebSocket connection error', error);
+				// const errorData = {
+				// 	message: 'WebSocket connection error',
+				// 	description: error.message,
+				// };
+
+				this.emitError(new Error('Connection got error: ' + error.message));
+			});
+
+			socket.on('close', async (code: any, reason: any) => {
+				if (pingTimer) {
+					clearInterval(pingTimer);
+				}
+
+				const resultData = {event: 'close', code, reason};
+				this.emit([this.helpers.returnJsonArray([resultData])], await creatreResponsePromise());
+			})
+		}
+
+		const closeFunction = async () => {
+			if (socket) {
 				socket.close();
-			},
+			}
+		}
+
+		await run();
+
+		return {
+			closeFunction: closeFunction,
+			manualTriggerFunction: run,
 		};
 	}
 }
