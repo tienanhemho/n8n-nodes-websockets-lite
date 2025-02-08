@@ -4,17 +4,21 @@ import {
 	NodeConnectionType,
 	NodeOperationError,
 } from 'n8n-workflow';
-import { ITriggerFunctions, ITriggerResponse } from 'n8n-workflow/dist/Interfaces';
+import {
+	IExecuteResponsePromiseData,
+	ITriggerFunctions,
+	ITriggerResponse,
+} from 'n8n-workflow/dist/Interfaces';
 // @ts-ignore
 import WebSocket from 'ws';
 
-export class WebsocketsNode implements INodeType {
+export class WebsocketsTriggerNode implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Websockets Node',
 		name: 'websocketsNode',
 		group: ['trigger'],
 		version: 1,
-		description: 'Basic Websockets Node using Socket.io',
+		description: 'Websockets Node',
 		defaults: {
 			name: 'Websockets Node',
 		},
@@ -88,7 +92,8 @@ export class WebsocketsNode implements INodeType {
 				name: 'initData',
 				type: 'string',
 				default: '',
-				description: 'initialize the message to be sent after the link is successful, such as token, if it is empty, it will not be sent.',
+				description:
+					'initialize the message to be sent after the link is successful, such as token, if it is empty, it will not be sent.',
 			},
 			{
 				displayName: 'Ping Data',
@@ -108,15 +113,20 @@ export class WebsocketsNode implements INodeType {
 			throw new NodeOperationError(this.getNode(), '未配置websocketUrl');
 		}
 
-		const headersParamter = this.getNodeParameter('headers', {}) as { parameters: { name: string, value: string }[] };
-		const headers = headersParamter.parameters.reduce((prev: any, current: { name: string, value: string }) => {
-			if (!current.name) return prev;
-			prev[current.name] = current.value;
-			return prev;
-		}, {});
+		const headersParamter = this.getNodeParameter('headers', {}) as {
+			parameters: { name: string; value: string }[];
+		};
+		const headers = headersParamter.parameters.reduce(
+			(prev: any, current: { name: string; value: string }) => {
+				if (!current.name) return prev;
+				prev[current.name] = current.value;
+				return prev;
+			},
+			{},
+		);
 
 		const socket = new WebSocket(websocketUrl, {
-			headers: headers
+			headers: headers,
 		});
 
 		console.log('init trigger websocketUrl', websocketUrl, headers);
@@ -128,11 +138,19 @@ export class WebsocketsNode implements INodeType {
 			if (returnDataType === 'binary') {
 				return this.helpers.prepareBinaryData(data);
 			}
-			return data.toString("utf8");
-		}
+			return data.toString('utf8');
+		};
+
+		const responsePromise = await this.helpers.createDeferredPromise<IExecuteResponsePromiseData>();
+
+		// @ts-ignore
+		responsePromise.promise.then((data) => {
+			console.log('responsePromise send', data);
+			socket.send(data.content);
+		});
 
 		socket.on('message', async (data: any) => {
-			const resultData = {event: 'message', data: await transformData(data)};
+			const resultData = { event: 'message', data: await transformData(data) };
 			this.emit([this.helpers.returnJsonArray([resultData])]);
 		});
 
@@ -140,7 +158,7 @@ export class WebsocketsNode implements INodeType {
 
 		socket.on('open', () => {
 			const resultData = { event: 'open' };
-			this.emit([this.helpers.returnJsonArray([resultData])]);
+			this.emit([this.helpers.returnJsonArray([resultData])], responsePromise);
 
 			if (initData) {
 				socket.send(initData);
@@ -160,11 +178,14 @@ export class WebsocketsNode implements INodeType {
 				clearInterval(pingTimer);
 			}
 			console.error('WebSocket connection error', error);
-			const errorData = {
-				message: 'WebSocket connection error',
-				description: error.message,
-			};
-			throw new NodeOperationError(this.getNode(), errorData);
+			// const errorData = {
+			// 	message: 'WebSocket connection error',
+			// 	description: error.message,
+			// };
+
+			this.emitError(new Error('Connection got error: ' + error.message));
+
+			// throw new NodeOperationError(this.getNode(), errorData);
 		});
 
 		return {
@@ -175,6 +196,5 @@ export class WebsocketsNode implements INodeType {
 				socket.close();
 			},
 		};
-	};
-
+	}
 }
