@@ -30,20 +30,38 @@ export class WebsocketsNode implements INodeType {
 				description: 'The URL of the websocket server to connect to',
 				required: true,
 			},
-			// {
-			// 	displayName: 'Auth Token',
-			// 	name: 'token',
-			// 	type: 'string',
-			// 	default: '',
-			// 	description: 'auth token',
-			// },
-			// {
-			// 	displayName: 'Event Name',
-			// 	name: 'eventName',
-			// 	type: 'string',
-			// 	default: '',
-			// 	description: 'The name of the event to listen for',
-			// },
+			{
+				displayName: 'Websocket Headers',
+				name: 'headers',
+				type: 'fixedCollection',
+				typeOptions: {
+					multipleValues: true,
+				},
+				placeholder: 'Add Parameter',
+				default: {
+					parameters: [],
+				},
+				options: [
+					{
+						name: 'parameters',
+						displayName: 'Parameter',
+						values: [
+							{
+								displayName: 'Name',
+								name: 'name',
+								type: 'string',
+								default: '',
+							},
+							{
+								displayName: 'Value',
+								name: 'value',
+								type: 'string',
+								default: '',
+							},
+						],
+					},
+				],
+			},
 			{
 				displayName: 'Return Data Type',
 				name: 'returnDataType',
@@ -63,21 +81,21 @@ export class WebsocketsNode implements INodeType {
 					},
 				],
 				default: 'string',
-				description: '返回的数据格式',
+				description: 'returned data format.',
 			},
 			{
 				displayName: 'Init Send Data',
 				name: 'initData',
 				type: 'string',
 				default: '',
-				description: '链接成功后初始化发送的消息，如token等，为空不发送',
+				description: 'initialize the message to be sent after the link is successful, such as token, if it is empty, it will not be sent.',
 			},
 			{
 				displayName: 'Ping Data',
 				name: 'pingData',
 				type: 'string',
 				default: '',
-				description: '定时心跳数据，为空不发送',
+				description: 'timing heartbeat data, if it is empty, it will not be sent.',
 			},
 		],
 	};
@@ -90,9 +108,18 @@ export class WebsocketsNode implements INodeType {
 			throw new NodeOperationError(this.getNode(), '未配置websocketUrl');
 		}
 
-		const socket = new WebSocket(websocketUrl, {});
+		const headersParamter = this.getNodeParameter('headers', {}) as { parameters: { name: string, value: string }[] };
+		const headers = headersParamter.parameters.reduce((prev: any, current: { name: string, value: string }) => {
+			if (!current.name) return prev;
+			prev[current.name] = current.value;
+			return prev;
+		}, {});
 
-		console.log('init trigger websocketUrl', websocketUrl);
+		const socket = new WebSocket(websocketUrl, {
+			headers: headers
+		});
+
+		console.log('init trigger websocketUrl', websocketUrl, headers);
 
 		const transformData = async (data: any) => {
 			if (returnDataType === 'json') {
