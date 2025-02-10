@@ -22,7 +22,7 @@ export class WebsocketsTriggerNode implements INodeType {
 		defaults: {
 			name: 'Websockets Node',
 		},
-		inputs: [NodeConnectionType.Main],
+		inputs: [],
 		outputs: [NodeConnectionType.Main],
 		properties: [
 			{
