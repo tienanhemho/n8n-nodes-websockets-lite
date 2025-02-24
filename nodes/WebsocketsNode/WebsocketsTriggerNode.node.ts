@@ -141,6 +141,11 @@ export class WebsocketsTriggerNode implements INodeType {
 		);
 
 		const run = async (reconnectTimes=0) => {
+
+			if (socket && socket.readyState === WebSocket.OPEN) {
+				return
+			}
+
 			socket = new WebSocket(websocketUrl, {
 				headers: headers,
 			});
@@ -218,6 +223,7 @@ export class WebsocketsTriggerNode implements INodeType {
 				this.emit([this.helpers.returnJsonArray([resultData])], await creatreResponsePromise());
 
 				if (maxReConnectTimes && reconnectTimes < maxReConnectTimes){
+					console.log('reconnect', reconnectTimes);
 					await run(reconnectTimes + 1);
 				}
 			})
