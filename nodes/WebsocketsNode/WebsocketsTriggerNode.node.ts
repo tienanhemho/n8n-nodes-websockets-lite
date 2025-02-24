@@ -183,7 +183,7 @@ export class WebsocketsTriggerNode implements INodeType {
 				if (pingData) {
 					pingTimer = setInterval(() => {
 						socket.send(pingData);
-					}, pingTimerSeconds);
+					}, pingTimerSeconds * 1000);
 				}
 			});
 

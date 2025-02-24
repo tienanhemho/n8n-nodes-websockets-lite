@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-websockets-lite",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "websocket trigger event",
   "keywords": [
     "n8n-community-node-package"
