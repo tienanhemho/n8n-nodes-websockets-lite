@@ -109,6 +109,12 @@ export class WebsocketsTriggerNode implements INodeType {
 				default: 60,
 				description: 'timing heartbeat data, if it is empty, it will not be sent.',
 			},
+			{
+				displayName: 'ReConnect Times',
+				name: 'maxReConnectTimes',
+				type: 'number',
+				default: 5,
+			},
 		],
 	};
 
@@ -134,7 +140,7 @@ export class WebsocketsTriggerNode implements INodeType {
 			{},
 		);
 
-		const run = async () => {
+		const run = async (reconnectTimes=0) => {
 			socket = new WebSocket(websocketUrl, {
 				headers: headers,
 			});
@@ -165,6 +171,7 @@ export class WebsocketsTriggerNode implements INodeType {
 
 			const pingData = this.getNodeParameter('pingData', '') as string;
 			const pingTimerSeconds = this.getNodeParameter('pingTimerSeconds', 60) as number;
+			const maxReConnectTimes = this.getNodeParameter('maxReConnectTimes', 5) as number;
 
 			socket.on('message', async (data: any) => {
 				const resultData = { event: 'message', data: await transformData(data) };
@@ -209,6 +216,10 @@ export class WebsocketsTriggerNode implements INodeType {
 
 				const resultData = {event: 'close', code, reason};
 				this.emit([this.helpers.returnJsonArray([resultData])], await creatreResponsePromise());
+
+				if (maxReConnectTimes && reconnectTimes < maxReConnectTimes){
+					await run(reconnectTimes + 1);
+				}
 			})
 		}
 
