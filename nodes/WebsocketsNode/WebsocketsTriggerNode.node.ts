@@ -102,6 +102,13 @@ export class WebsocketsTriggerNode implements INodeType {
 				default: '',
 				description: 'timing heartbeat data, if it is empty, it will not be sent.',
 			},
+			{
+				displayName: 'Ping Timer(s)',
+				name: 'pingTimerSeconds',
+				type: 'number',
+				default: 60,
+				description: 'timing heartbeat data, if it is empty, it will not be sent.',
+			},
 		],
 	};
 
@@ -156,6 +163,8 @@ export class WebsocketsTriggerNode implements INodeType {
 				return responsePromise;
 			}
 
+			const pingData = this.getNodeParameter('pingData', '') as string;
+			const pingTimerSeconds = this.getNodeParameter('pingTimerSeconds', 60) as number;
 
 			socket.on('message', async (data: any) => {
 				const resultData = { event: 'message', data: await transformData(data) };
@@ -174,11 +183,10 @@ export class WebsocketsTriggerNode implements INodeType {
 				if (pingData) {
 					pingTimer = setInterval(() => {
 						socket.send(pingData);
-					}, 5000);
+					}, pingTimerSeconds);
 				}
 			});
 
-			const pingData = this.getNodeParameter('pingData', '') as string;
 
 			// Handle connection errors
 			socket.on('error', (error: any) => {
