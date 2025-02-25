@@ -118,6 +118,8 @@ export class WebsocketsTriggerNode implements INodeType {
 		],
 	};
 
+	lastSocket: any = null;
+
 	async trigger(this: ITriggerFunctions): Promise<ITriggerResponse> {
 		const websocketUrl = this.getNodeParameter('websocketUrl', '') as string;
 		const initData = this.getNodeParameter('initData', '') as string;
@@ -127,7 +129,6 @@ export class WebsocketsTriggerNode implements INodeType {
 		}
 
 		let socket : any = null;
-		let isConnect = false;
 
 		const headersParamter = this.getNodeParameter('headers', {}) as {
 			parameters: { name: string; value: string }[];
@@ -141,18 +142,18 @@ export class WebsocketsTriggerNode implements INodeType {
 			{},
 		);
 
-		const run = async (reconnectTimes=0) => {
-			if (isConnect) {
-				return
-			}
-			isConnect = true;
+		const isManual = this.getMode() === 'manual';
 
+		let isConfirmClose = false;
+
+		const run = async (reconnectTimes=0) => {
 
 			socket = new WebSocket(websocketUrl, {
 				headers: headers,
 			});
 
-			console.log('init trigger websocketUrl', websocketUrl, headers);
+
+			console.log('init trigger websocketUrl', websocketUrl, headers, this.getMode(), this.getActivationMode());
 
 			const transformData = async (data: any) => {
 				if (returnDataType === 'json') {
@@ -183,6 +184,11 @@ export class WebsocketsTriggerNode implements INodeType {
 			socket.on('message', async (data: any) => {
 				const resultData = { event: 'message', data: await transformData(data) };
 				this.emit([this.helpers.returnJsonArray([resultData])], await creatreResponsePromise());
+
+				if (isManual){
+					// 断开连接
+					socket.terminate();
+				}
 			});
 
 			let pingTimer: boolean | any = false;
@@ -201,7 +207,6 @@ export class WebsocketsTriggerNode implements INodeType {
 				}
 			});
 
-
 			// Handle connection errors
 			socket.on('error', (error: any) => {
 				if (pingTimer) {
@@ -219,8 +224,6 @@ export class WebsocketsTriggerNode implements INodeType {
 			socket.on('close', async (code: any, reason: any) => {
 				console.log('WebSocket connection closed', code);
 
-				isConnect = false;
-
 				if (pingTimer) {
 					clearInterval(pingTimer);
 				}
@@ -228,8 +231,14 @@ export class WebsocketsTriggerNode implements INodeType {
 				const resultData = {event: 'close', code};
 				this.emit([this.helpers.returnJsonArray([resultData])], await creatreResponsePromise());
 
+				// 手动关闭的
+				if (isConfirmClose){
+					console.log("confirm close");
+					return;
+				}
+
 				if (maxReConnectTimes && reconnectTimes < maxReConnectTimes){
-					console.log('reconnect', reconnectTimes);
+					// console.log('reconnect', reconnectTimes);
 					await run(reconnectTimes + 1);
 				}
 			})
@@ -237,7 +246,9 @@ export class WebsocketsTriggerNode implements INodeType {
 
 		const closeFunction = async () => {
 			if (socket) {
-				socket.close();
+				isConfirmClose = true;
+				console.log('closeFunction socket');
+				socket.terminate();
 			}
 		}
 
