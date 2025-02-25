@@ -142,10 +142,11 @@ export class WebsocketsTriggerNode implements INodeType {
 		);
 
 		const run = async (reconnectTimes=0) => {
-			isConnect = true;
 			if (isConnect) {
 				return
 			}
+			isConnect = true;
+
 
 			socket = new WebSocket(websocketUrl, {
 				headers: headers,
@@ -216,7 +217,7 @@ export class WebsocketsTriggerNode implements INodeType {
 			});
 
 			socket.on('close', async (code: any, reason: any) => {
-				console.log('WebSocket connection closed', code, reason);
+				console.log('WebSocket connection closed', code);
 
 				isConnect = false;
 
@@ -224,7 +225,7 @@ export class WebsocketsTriggerNode implements INodeType {
 					clearInterval(pingTimer);
 				}
 
-				const resultData = {event: 'close', code, reason};
+				const resultData = {event: 'close', code};
 				this.emit([this.helpers.returnJsonArray([resultData])], await creatreResponsePromise());
 
 				if (maxReConnectTimes && reconnectTimes < maxReConnectTimes){
@@ -244,7 +245,6 @@ export class WebsocketsTriggerNode implements INodeType {
 
 		return {
 			closeFunction: closeFunction,
-			manualTriggerFunction: run,
 		};
 	}
 }
