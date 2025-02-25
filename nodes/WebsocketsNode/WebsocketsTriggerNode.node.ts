@@ -127,6 +127,7 @@ export class WebsocketsTriggerNode implements INodeType {
 		}
 
 		let socket : any = null;
+		let isConnect = false;
 
 		const headersParamter = this.getNodeParameter('headers', {}) as {
 			parameters: { name: string; value: string }[];
@@ -141,8 +142,8 @@ export class WebsocketsTriggerNode implements INodeType {
 		);
 
 		const run = async (reconnectTimes=0) => {
-
-			if (socket && socket.readyState === WebSocket.OPEN) {
+			isConnect = true;
+			if (isConnect) {
 				return
 			}
 
@@ -215,6 +216,10 @@ export class WebsocketsTriggerNode implements INodeType {
 			});
 
 			socket.on('close', async (code: any, reason: any) => {
+				console.log('WebSocket connection closed', code, reason);
+
+				isConnect = false;
+
 				if (pingTimer) {
 					clearInterval(pingTimer);
 				}
