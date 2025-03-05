@@ -5,6 +5,7 @@ import {
 	NodeOperationError,
 } from 'n8n-workflow';
 import {
+	IDataObject,
 	IExecuteResponsePromiseData,
 	ITriggerFunctions,
 	ITriggerResponse,
@@ -168,10 +169,14 @@ export class WebsocketsTriggerNode implements INodeType {
 			const creatreResponsePromise = async () => {
 				const responsePromise = await this.helpers.createDeferredPromise<IExecuteResponsePromiseData>();
 
-				// @ts-ignore
-				responsePromise.promise.then((data) => {
+				//@ts-ignore this is useless, i don't know why it is here
+				responsePromise.promise.then((data : IDataObject) => {
+					//return if doesn't have content
+					if (!data || !data.content) {
+						return;
+					}
 					console.log('responsePromise send', data);
-					// socket.send(data.content); // i don't know why have to send back
+					socket.send(data.content);
 				});
 
 				return responsePromise;
@@ -194,8 +199,10 @@ export class WebsocketsTriggerNode implements INodeType {
 			let pingTimer: boolean | any = false;
 
 			socket.on('open', async () => {
-				const resultData = {event: 'open'};
-				this.emit([this.helpers.returnJsonArray([resultData])], await creatreResponsePromise());
+				if (!isManual){
+					const resultData = {event: 'open'};
+					this.emit([this.helpers.returnJsonArray([resultData])], await creatreResponsePromise());
+				}
 
 				if (initData.length > 0) {
 					socket.send(initData);
