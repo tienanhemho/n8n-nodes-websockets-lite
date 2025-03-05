@@ -171,7 +171,7 @@ export class WebsocketsTriggerNode implements INodeType {
 				// @ts-ignore
 				responsePromise.promise.then((data) => {
 					console.log('responsePromise send', data);
-					socket.send(data.content);
+					// socket.send(data.content); // i don't know why have to send back
 				});
 
 				return responsePromise;
@@ -197,10 +197,10 @@ export class WebsocketsTriggerNode implements INodeType {
 				const resultData = {event: 'open'};
 				this.emit([this.helpers.returnJsonArray([resultData])], await creatreResponsePromise());
 
-				if (initData) {
+				if (initData.length > 0) {
 					socket.send(initData);
 				}
-				if (pingData) {
+				if (pingData.length > 0) {
 					pingTimer = setInterval(() => {
 						socket.send(pingData);
 					}, pingTimerSeconds * 1000);
