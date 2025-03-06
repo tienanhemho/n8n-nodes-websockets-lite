@@ -170,8 +170,10 @@ export class WebsocketsTriggerNode implements INodeType {
 
 				// @ts-ignore
 				responsePromise.promise.then((data) => {
-					console.log('responsePromise send', data);
-					socket.send(data.content);
+					if (data && data.content){
+						// console.log('responsePromise send', data);
+						socket.send(data.content);
+					}
 				});
 
 				return responsePromise;
