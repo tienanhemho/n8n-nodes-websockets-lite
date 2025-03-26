@@ -5,8 +5,6 @@ import {
 	NodeOperationError,
 } from 'n8n-workflow';
 import {
-	IDataObject,
-	IExecuteResponsePromiseData,
 	ITriggerFunctions,
 	ITriggerResponse,
 } from 'n8n-workflow/dist/Interfaces';
@@ -18,13 +16,19 @@ export class WebsocketsTriggerNode implements INodeType {
 		displayName: 'Websockets Node',
 		name: 'websocketsNode',
 		group: ['trigger'],
-		version: 1,
+		version: 2,
 		description: 'Websockets Node',
 		defaults: {
 			name: 'Websockets Node',
 		},
 		inputs: [],
 		outputs: [NodeConnectionType.Main],
+		credentials: [
+			{
+				name: 'webSocketsApi',
+				required: false,
+			},
+		],
 		properties: [
 			{
 				displayName: 'Websocket URL',
@@ -73,42 +77,41 @@ export class WebsocketsTriggerNode implements INodeType {
 				type: 'options',
 				options: [
 					{
-						name: 'string',
+						name: 'String',
 						value: 'string',
 					},
 					{
-						name: 'json',
+						name: 'Json',
 						value: 'json',
 					},
 					{
-						name: 'binary',
+						name: 'Binary',
 						value: 'binary',
 					},
 				],
 				default: 'string',
-				description: 'returned data format.',
+				description: 'Returned data format',
 			},
 			{
 				displayName: 'Init Send Data',
 				name: 'initData',
 				type: 'string',
 				default: '',
-				description:
-					'initialize the message to be sent after the link is successful, such as token, if it is empty, it will not be sent.',
+				description: 'Initialize the message to be sent after the link is successful, such as token, if it is empty, it will not be sent',
 			},
 			{
 				displayName: 'Ping Data',
 				name: 'pingData',
 				type: 'string',
 				default: '',
-				description: 'timing heartbeat data, if it is empty, it will not be sent.',
+				description: 'Timing heartbeat data, if it is empty, it will not be sent',
 			},
 			{
 				displayName: 'Ping Timer(s)',
 				name: 'pingTimerSeconds',
 				type: 'number',
 				default: 60,
-				description: 'timing heartbeat data, if it is empty, it will not be sent.',
+				description: 'Timing heartbeat data, if it is empty, it will not be sent',
 			},
 			{
 				displayName: 'ReConnect Times',
@@ -143,6 +146,15 @@ export class WebsocketsTriggerNode implements INodeType {
 			{},
 		);
 
+		// add headers from credentials
+		const credentials = await this.getCredentials('webSocketsApi');
+		if (credentials) {
+			//credentials have object { "cookie": "cookie" }
+			if ((credentials as any).cookie) {
+				headers['Cookie'] = credentials.cookie;
+			}
+		}
+
 		const isManual = this.getMode() === 'manual';
 
 		let isConfirmClose = false;
@@ -166,27 +178,17 @@ export class WebsocketsTriggerNode implements INodeType {
 				return data.toString('utf8');
 			};
 
-			const creatreResponsePromise = async () => {
-				const responsePromise = await this.helpers.createDeferredPromise<IExecuteResponsePromiseData>();
-
-				// @ts-ignore
-				responsePromise.promise.then((data) => {
-					if (data && data.content){
-						// console.log('responsePromise send', data);
-						socket.send(data.content);
-					}
-				});
-
-				return responsePromise;
-			}
-
 			const pingData = this.getNodeParameter('pingData', '') as string;
 			const pingTimerSeconds = this.getNodeParameter('pingTimerSeconds', 60) as number;
 			const maxReConnectTimes = this.getNodeParameter('maxReConnectTimes', 5) as number;
 
 			socket.on('message', async (data: any) => {
-				const resultData = { event: 'message', data: await transformData(data) };
-				this.emit([this.helpers.returnJsonArray([resultData])], await creatreResponsePromise());
+				const resultData = {
+					event: 'message',
+					ws: socket,
+					data: await transformData(data)
+				};
+				this.emit([this.helpers.returnJsonArray([resultData])]);
 
 				if (isManual){
 					// 断开连接
@@ -197,15 +199,16 @@ export class WebsocketsTriggerNode implements INodeType {
 			let pingTimer: boolean | any = false;
 
 			socket.on('open', async () => {
-				if (!isManual){
-					const resultData = {event: 'open'};
-					this.emit([this.helpers.returnJsonArray([resultData])], await creatreResponsePromise());
-				}
+				const resultData = {
+					event: 'open',
+					ws: socket
+				};
+				this.emit([this.helpers.returnJsonArray([resultData])]);
 
-				if (initData.length > 0) {
+				if (initData) {
 					socket.send(initData);
 				}
-				if (pingData.length > 0) {
+				if (pingData) {
 					pingTimer = setInterval(() => {
 						socket.send(pingData);
 					}, pingTimerSeconds * 1000);
@@ -234,7 +237,7 @@ export class WebsocketsTriggerNode implements INodeType {
 				}
 
 				const resultData = {event: 'close', code};
-				this.emit([this.helpers.returnJsonArray([resultData])], await creatreResponsePromise());
+				this.emit([this.helpers.returnJsonArray([resultData])]);
 
 				// 手动关闭的
 				if (isConfirmClose){
