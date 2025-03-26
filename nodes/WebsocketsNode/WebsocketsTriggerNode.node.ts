@@ -169,14 +169,12 @@ export class WebsocketsTriggerNode implements INodeType {
 			const creatreResponsePromise = async () => {
 				const responsePromise = await this.helpers.createDeferredPromise<IExecuteResponsePromiseData>();
 
-				//@ts-ignore this is useless, i don't know why it is here
-				responsePromise.promise.then((data : IDataObject) => {
-					//return if doesn't have content
-					if (!data || !data.content) {
-						return;
+				// @ts-ignore
+				responsePromise.promise.then((data) => {
+					if (data && data.content){
+						// console.log('responsePromise send', data);
+						socket.send(data.content);
 					}
-					console.log('responsePromise send', data);
-					socket.send(data.content);
 				});
 
 				return responsePromise;
