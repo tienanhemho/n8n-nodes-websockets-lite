@@ -1,4 +1,5 @@
-import {
+import { ApplicationError } from 'n8n-workflow';
+import type {
   ICredentialType,
   INodeProperties,
   IHttpRequestOptions,
@@ -9,10 +10,18 @@ import {
 	ICredentialDataDecryptedObject,
 } from 'n8n-workflow';
 
-export class WebSocketApi implements ICredentialType {
-  name = 'webSocketApi';
-  displayName = 'webSocket API';
-  properties: INodeProperties[] = [
+export class WebsocketsApi implements ICredentialType {
+  name = 'websocketsApi';
+  displayName = 'Websockets API';
+  properties: INodeProperties[] = [{
+		displayName: 'Cookie',
+			name: 'cookie',
+			type: 'hidden',
+			typeOptions: {
+				expirable: true,
+			},
+			default: '',
+		},
     {
       displayName: 'Login Endpoint',
       name: 'loginEndpoint',
@@ -51,37 +60,53 @@ export class WebSocketApi implements ICredentialType {
       displayName: 'Headers',
       name: 'headers',
       type: 'json',
-      default: '',
+      default: '{}',
       placeholder: '{"Accept": "application/json"}',
 			description: 'Headers to send with the login request',
     },
+		{
+      displayName: 'Test Endpoint',
+      name: 'testEndpoint',
+      type: 'string',
+      default: '',
+      placeholder: 'https://example.com/api/test'
+    },
   ];
 
-  async preAuthentication(this: IHttpRequestHelper, credentials: ICredentialDataDecryptedObject): Promise<{ cookie: string }> {
+  async preAuthentication(this: IHttpRequestHelper, credentials: ICredentialDataDecryptedObject) {
 		const bodyContentType = credentials.bodyContentType as string;
 		const jsonBody = credentials.jsonBody as string;
 		const headers = credentials.headers as string;
 		const parsedHeaders = headers ? JSON.parse(headers) : {};
 		const parsedBody = jsonBody ? JSON.parse(jsonBody) : {};
 		const parsedBodyString = bodyContentType === 'json' ? JSON.stringify(parsedBody) : new URLSearchParams(parsedBody).toString();
-		const parsedHeadersContentType = bodyContentType === 'json' ? 'application/json' : 'application/x-www-form-urlencoded';
     const requestOptions: IHttpRequestOptions = {
       method: 'POST' as IHttpRequestMethods,
       url: credentials.loginEndpoint as string,
 			headers: {
-				...parsedHeaders,
-				'Content-Type': parsedHeadersContentType,
+				...parsedHeaders
 			},
 			body: parsedBodyString,
 			json: bodyContentType === 'json',
+			returnFullResponse: true,
+			disableFollowRedirect: true,
+			ignoreHttpStatusErrors: true
     };
 
-    const response = await this.helpers.httpRequest!(requestOptions);
+    const response = await this.helpers.httpRequest(requestOptions);
+		const rPHeaders = response.headers;
+		const cookie = (rPHeaders['set-cookie'] as string[])
+			?.map((cookie) => cookie.split(';')[0])
+			?.join('; ')
+			?.trim();
 
-    const cookie = response.headers['set-cookie']?.[0];
-    if (!cookie) {
-      throw new Error('No cookie returned from login request');
-    }
+			if (!cookie) {
+				throw new ApplicationError('No cookie returned. Please check your credentials.' + JSON.stringify(response.headers), {
+					level: 'warning',
+					tags: {},
+					extra: {},
+				});
+			}
 
     return { cookie };
   }
@@ -89,15 +114,22 @@ export class WebSocketApi implements ICredentialType {
 		type: 'generic',
 		properties: {
 			headers: {
-				'Cookie': '={{$credentials.cookie}}',
+				Cookie: '={{$credentials.cookie}}',
 			},
 		},
 	};
 	test: ICredentialTestRequest = {
 		request: {
-			baseURL: 'https://example.com/api',
-			url: '/test',
-			method: 'GET',
+			url: '={{$credentials.testEndpoint}}',
 		},
+		rules: [
+			{
+				type: 'responseCode',
+				properties: {
+					value: 302,
+					message: 'Response code is not 2xx'
+				},
+			},
+		],
 	};
 }

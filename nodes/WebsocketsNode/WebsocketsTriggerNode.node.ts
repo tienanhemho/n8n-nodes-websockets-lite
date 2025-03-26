@@ -25,7 +25,7 @@ export class WebsocketsTriggerNode implements INodeType {
 		outputs: [NodeConnectionType.Main],
 		credentials: [
 			{
-				name: 'webSocketsApi',
+				name: 'websocketsApi',
 				required: false,
 			},
 		],
@@ -147,7 +147,8 @@ export class WebsocketsTriggerNode implements INodeType {
 		);
 
 		// add headers from credentials
-		const credentials = await this.getCredentials('webSocketsApi');
+		const credentials = await this.getCredentials('websocketsApi');
+		// if (this.getMode() === 'manual') console.log(JSON.stringify(credentials));
 		if (credentials) {
 			//credentials have object { "cookie": "cookie" }
 			if ((credentials as any).cookie) {

@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-websockets-lite-a",
-  "version": "0.3.8",
+  "version": "0.5.5",
   "description": "websocket trigger event",
   "keywords": [
     "n8n-community-node-package"
@@ -13,7 +13,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/imblowsnow/n8n-nodes-websockets-lite"
+    "url": "https://github.com/tienanhemho/n8n-nodes-websockets-lite-a"
   },
   "engines": {
     "node": ">=18.10",
@@ -33,6 +33,9 @@
   ],
   "n8n": {
     "n8nNodesApiVersion": 1,
+    "credentials": [
+      "dist/credentials/WebsocketsApi.credentials.js"
+    ],
     "nodes": [
       "dist/nodes/WebsocketsNode/WebsocketsTriggerNode.node.js",
       "dist/nodes/WebsocketsNode/WebsocketsReplyNode.node.js"
