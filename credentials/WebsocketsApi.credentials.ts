@@ -121,11 +121,14 @@ export class WebsocketsApi implements ICredentialType {
 	test: ICredentialTestRequest = {
 		request: {
 			url: '={{$credentials.testEndpoint}}',
+			method: 'POST',
 			headers: {
 				"X-Requested-With": "XMLHttpRequest",
 				"Accept": "application/json",
 				"Accept-Language": "vi,en;q=0.9",
-			}
+				"Cookie": "={{$credentials.cookie}}",
+			},
+			disableFollowRedirect: true,
 		},
 		rules: [
 			{
