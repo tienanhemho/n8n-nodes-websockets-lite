@@ -121,6 +121,11 @@ export class WebsocketsApi implements ICredentialType {
 	test: ICredentialTestRequest = {
 		request: {
 			url: '={{$credentials.testEndpoint}}',
+			headers: {
+				"X-Requested-With": "XMLHttpRequest",
+				"Accept": "application/json",
+				"Accept-Language": "vi,en;q=0.9",
+			}
 		},
 		rules: [
 			{
@@ -128,6 +133,13 @@ export class WebsocketsApi implements ICredentialType {
 				properties: {
 					value: 302,
 					message: 'Response code is not 2xx'
+				},
+			},
+			{
+				type: 'responseCode',
+				properties: {
+					value: 601,
+					message: 'Lỗi đăng nhập',
 				},
 			},
 		],
