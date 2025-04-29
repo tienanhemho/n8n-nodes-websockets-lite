@@ -145,6 +145,13 @@ export class WebsocketsApi implements ICredentialType {
 					message: 'Lỗi đăng nhập',
 				},
 			},
+			{
+				type: 'responseCode',
+				properties: {
+					value: 404,
+					message: 'Không thấy trang',
+				},
+			},
 		],
 	};
 }
