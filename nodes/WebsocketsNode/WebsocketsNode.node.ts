@@ -222,10 +222,11 @@ export class WebsocketsNode implements INodeType {
 					clearInterval(pingTimer);
 				}
 				console.error('WebSocket connection error', error);
-				// const errorData = {
-				// 	message: 'WebSocket connection error',
-				// 	description: error.message,
-				// };
+
+				// if we intentionally closed, don't emit
+				if (isConfirmClose) {
+					return;
+				}
 
 				this.emitError(new Error('Connection got error: ' + error.message));
 			});
@@ -254,17 +255,27 @@ export class WebsocketsNode implements INodeType {
 		}
 
 		const closeFunction = async () => {
-			if (socket) {
-				isConfirmClose = true;
-				console.log('closeFunction socket');
-				socket.terminate();
+			if (!socket) return;
+			isConfirmClose = true;
+			console.log('closeFunction socket');
+			try {
+				// only close if connecting or open
+				const ready = socket.readyState;
+				if (
+					ready === WebSocket.CONNECTING ||
+					ready === WebSocket.OPEN
+				) {
+					socket.close();
+				}
+			} catch (err) {
+				console.error('Error while closing socket', err);
 			}
-		}
+		};
 
 		await run();
 
 		return {
-			closeFunction: closeFunction,
+			closeFunction,
 		};
 	}
 }
