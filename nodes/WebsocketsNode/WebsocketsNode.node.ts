@@ -11,7 +11,7 @@ import {
 // @ts-ignore
 import WebSocket from 'ws';
 
-export class WebsocketsTriggerNode implements INodeType {
+export class WebsocketsNode implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Websockets Node',
 		name: 'websocketsNode',

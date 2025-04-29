@@ -3,15 +3,15 @@
 # n8n-nodes-websockets-lite
 
 ## nodes
-- WebsocketsTriggerNode
-- WebsocketsReplyNode
+- WebsocketsNode
+- WebsocketsSendNode
 
 ## function
 - Support event open/close/message.
 - Custom request header
 - Customize initial data
 - Timed heartbeat data
-- Reply to the message.-Only once
+- Send to the webhook.-Only once
 
 ## 功能
 - 支持事件  open / close / message

@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-websockets-lite-a",
-  "version": "0.5.9",
+  "version": "0.6.0",
   "description": "websocket trigger event",
   "keywords": [
     "n8n-community-node-package"
@@ -37,8 +37,8 @@
       "dist/credentials/WebsocketsApi.credentials.js"
     ],
     "nodes": [
-      "dist/nodes/WebsocketsNode/WebsocketsTriggerNode.node.js",
-      "dist/nodes/WebsocketsNode/WebsocketsReplyNode.node.js"
+      "dist/nodes/WebsocketsNode/WebsocketsNode.node.js",
+      "dist/nodes/WebsocketsNode/WebsocketsSendNode.node.js"
     ]
   },
   "devDependencies": {

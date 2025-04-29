@@ -8,10 +8,10 @@ import { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow/dist/Interfa
 // @ts-ignore
 import WebSocket from 'ws';
 
-export class WebsocketsReplyNode implements INodeType {
+export class WebsocketsSendNode implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Websockets Send Node',
-		name: 'websocketsReplyNode',
+		name: 'websocketsSendNode',
 		group: ['transform'],
 		version: 1,
 		description: 'Websockets Send',
