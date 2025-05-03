@@ -14,13 +14,15 @@ export class WebsocketsApi implements ICredentialType {
   name = 'websocketsApi';
   displayName = 'Websockets API';
   properties: INodeProperties[] = [{
-		displayName: 'Cookie',
+			displayName: 'Cookie',
 			name: 'cookie',
 			type: 'hidden',
 			typeOptions: {
 				expirable: true,
 			},
 			default: '',
+			ignoreValidationDuringExecution: true,
+			description: 'Cookie to use for authentication. This will be set automatically after login.',
 		},
     {
       displayName: 'Login Endpoint',
